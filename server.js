@@ -4,14 +4,16 @@ const bodyParser = require('body-parser');
 const helmet = require('helmet');
 
 const app = express();
+
 app.use(helmet())
+ 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cors());
  
 
-let mysql = require('mysql');
-let connection = mysql.createConnection({
+var mysql = require('mysql');
+var connection = mysql.createConnection({
   host     : 'localhost',
   user     : 'root',
   password : 'root',
@@ -44,6 +46,28 @@ app.get('/users', function (req, res) {
     //connection.end();
 });
 
+app.get('/users/:userId', function (req, res) {
+
+    let userId = req.params.userId;
+    if (!userId || userId === "") {
+      return res.json({ "success": false, "msg": "กรุณาระบุหมายเลขสมาชิกที่ต้องการลบ", "error": err });
+    }
+
+
+    let sql = "SELECT * FROM users WHERE id="+parseInt(userId);
+    connection.query(sql, function (err, result) {
+
+        if (err){
+          throw err;
+          return res.json({ "success": false, "msg": "ไม่มีข้อมูลสมาชิกที่ต้องการ", "error": err });
+        } 
+       
+        res.status(200).send({ "success": true, "result": result[0] });
+    });
+
+});
+
+
 
 app.post('/users', function (req, res){
     
@@ -59,6 +83,31 @@ app.post('/users', function (req, res){
       return res.json({ "success": false, "msg": "ไม่สามารถสร้างข้อมูลสมาชิกได้", "error": err });
     }
     res.status(201).send({ "success": true, "msg": 'สร้างข้อมูลสมาชิกเรียบร้อย' });
+
+  });
+
+});
+
+app.put('/users/:userId', function (req, res){
+    
+    let userId = req.params.userId;
+    if (!userId || userId === "") {
+      return res.json({ "success": false, "msg": "กรุณาระบุหมายเลขสมาชิกที่ต้องการลบ", "error": err });
+    }
+
+    if (!req.body.firstname) {
+      return res.status(400).send({ "success": false, "msg": "กรุณากรอกชื่อ" });
+    }
+    
+    let sql = "UPDATE users SET firstname = '"+req.body.firstname+"', lastname = '"+req.body.lastname+"', tel = '"+req.body.tel+"' WHERE id ="+parseInt(userId);
+    connection.query(sql, function (err, result) {
+
+    if (err) {
+      throw err;
+      console.log("some error: ", err);
+      return res.json({ "success": false, "msg": "ไม่สามารถอัพเดทข้อมูลสมาชิกได้", "error": err });
+    }
+    res.status(201).send({ "success": true, "msg": 'อัพเดทข้อมูลสมาชิกเรียบร้อย' });
 
   });
 
